@@ -3,6 +3,7 @@ Shader "Tutorial/23_CubemapRefraction"
     Properties
     {
 		_BumpMap("Normal", 2D) = "bump" {}
+		_Bump("Normal Strength", Float) = 1
 		_ReflectionMap("Reflection", CUBE) = "black" {}
 		_Color("Diff Color", Color) = (1, 1, 1, 1)
 		_Shininess("Shiny", Float) = 8
@@ -68,6 +69,7 @@ Shader "Tutorial/23_CubemapRefraction"
             CBUFFER_START(UnityPerMaterial)
             	float4 _LightColor0;
             	float4 _BumpMap_ST;
+            	float _Bump;
             	float4 _Color;
             	float _Shininess;
             	float _MipMapLevel;
@@ -119,6 +121,7 @@ Shader "Tutorial/23_CubemapRefraction"
 
             	// New way
             	localCoord = UnpackNormal(encodedNormal);
+            	localCoord.xy *= _Bump;
             	local2WorldTranspose = CreateTangentToWorld(input.normalWS, input.tangentWS.xyz, input.tangentWS.w);
             	normalDir = TransformTangentToWorldDir(localCoord, local2WorldTranspose, true);
             	
