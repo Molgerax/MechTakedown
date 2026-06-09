@@ -36,6 +36,7 @@ Shader "Tutorial/20_MatCap"
                 float2 uv : TEXCOORD0;
                 float3 positionWS : TEXCOORD1;
                 float3 normalVS : TEXCOORD2;
+                float3 normalWS : TEXCOORD3;
             };
 
             CBUFFER_START(UnityPerMaterial)
@@ -53,8 +54,9 @@ Shader "Tutorial/20_MatCap"
                 OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
                 OUT.positionWS = TransformObjectToWorld(IN.positionOS.xyz);
                 OUT.uv = IN.uv * _MainTex_ST.xy + _MainTex_ST.zw;
-                
-                OUT.normalVS = TransformWorldToViewNormal(TransformObjectToWorldNormal(IN.normal.xyz));
+
+			    OUT.normalWS = TransformObjectToWorldNormal(IN.normal.xyz);
+                OUT.normalVS = TransformWorldToViewNormal(OUT.normalWS);
                 
 			    return OUT;
             }
@@ -65,8 +67,18 @@ Shader "Tutorial/20_MatCap"
 				
 				float3 viewDir = normalize( IN.positionWS - GetCameraPositionWS() );
 
-                float2 uv = IN.normalVS.xy / 2.0 + 0.5;
+                float3 right = normalize(cross(float3(0, 1, 0), viewDir));
+                float3 up = normalize(cross(viewDir, right));
 
+                float3x3 pixelViewMatrix = float3x3(right, up, viewDir);
+
+                float3 viewNormal = IN.normalVS;
+                //viewNormal = mul(pixelViewMatrix, IN.normalWS);
+                
+                float2 uv = viewNormal.xy / 2.0 + 0.5;
+
+              
+                
                 uv *= _MainTex_ST.xy;
                 
 				output = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);

@@ -16,6 +16,8 @@ Shader "Tutorial/21_Cubemap"
 
         Pass
         {
+            Cull Back
+            
             HLSLPROGRAM
 
             #pragma vertex vert
@@ -65,7 +67,8 @@ Shader "Tutorial/21_Cubemap"
 				
 				float3 viewDir = normalize( IN.positionWS - GetCameraPositionWS() );
                 float3 sampleDir = reflect(viewDir, IN.normalWS);
-                
+
+                //sampleDir = IN.normalWS;
                 output = SAMPLE_TEXTURECUBE(_MainTex, sampler_MainTex, sampleDir);
                 
                 return output;
