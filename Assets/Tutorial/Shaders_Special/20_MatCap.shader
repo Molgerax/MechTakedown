@@ -57,7 +57,16 @@ Shader "Tutorial/20_MatCap"
 
 			    OUT.normalWS = TransformObjectToWorldNormal(IN.normal.xyz);
                 OUT.normalVS = TransformWorldToViewNormal(OUT.normalWS);
-                
+
+                float3 viewDir = normalize( OUT.positionWS - GetCameraPositionWS() );
+			    float3 up = GetWorldToViewMatrix()._m10_m11_m12;
+                float3 right = normalize(cross(up, viewDir));
+                up = normalize(cross(viewDir, right));
+
+                float3x3 pixelViewMatrix = float3x3(right, up, viewDir);
+
+                OUT.normalVS = mul(pixelViewMatrix, OUT.normalWS);
+			    
 			    return OUT;
             }
 
@@ -65,16 +74,8 @@ Shader "Tutorial/20_MatCap"
             {
 				float4 output = 0;
 				
-				float3 viewDir = normalize( IN.positionWS - GetCameraPositionWS() );
-
-                float3 right = normalize(cross(float3(0, 1, 0), viewDir));
-                float3 up = normalize(cross(viewDir, right));
-
-                float3x3 pixelViewMatrix = float3x3(right, up, viewDir);
-
+				
                 float3 viewNormal = IN.normalVS;
-                //viewNormal = mul(pixelViewMatrix, IN.normalWS);
-                
                 float2 uv = viewNormal.xy / 2.0 + 0.5;
 
               
