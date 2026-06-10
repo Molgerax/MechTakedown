@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 
 public class RaycastShoot : MonoBehaviour
@@ -20,10 +21,10 @@ public class RaycastShoot : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!Input.GetMouseButtonDown(0)) return;
+        if (!Mouse.current.leftButton.isPressed) return;
 
         RaycastHit hit;
-        if (Physics.Raycast(cam.ScreenPointToRay(Input.mousePosition), out hit, 100f, shieldLayer))
+        if (Physics.Raycast(cam.ScreenPointToRay(Mouse.current.position.value), out hit, 100f, shieldLayer))
         {
 
             Renderer rend = hit.transform.GetComponent<Renderer>();

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class ShieldManager : MonoBehaviour
 {
@@ -74,7 +75,7 @@ public class ShieldManager : MonoBehaviour
 
     void BootOnButton()
     {
-        if(Input.GetKeyDown(KeyCode.Space) && !isActivating)
+        if(Keyboard.current.spaceKey.wasPressedThisFrame && !isActivating)
         {
             Activate(activationTime, isActive);
         }
