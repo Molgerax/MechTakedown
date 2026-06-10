@@ -33,23 +33,23 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Activation: 0.681
-    - _ActivationSmooth: 0.229
-    - _BaseAlpha: 0.547
+    - _Activation: 0.665
+    - _ActivationSmooth: 0.319
+    - _BaseAlpha: 0.404
     - _BorderFuzz: 0
-    - _BorderGap: 0.145
-    - _FadeDelay: 0.348
-    - _FresnelAmount: 1
-    - _HoleGap: 0.578
+    - _BorderGap: 0.176
+    - _FadeDelay: 0.505
+    - _FresnelAmount: 0.569
+    - _HoleGap: 0.718
     - _TileAmount: 22.32
-    - _WaveDelay: 0.28
-    - _WaveHitStrength: 0.87
+    - _WaveDelay: 0.197
+    - _WaveHitStrength: 0.452
     - _WaveMaxTime: 0.75
-    - _WaveThickness: 0.29
-    - _WobbleSpeed: 3.1
+    - _WaveThickness: 1.83
+    - _WobbleSpeed: 1.25
     - _WobbleSpeedVar: 1
     - _WobbleStrength: 1
-    - _WobbleStrengthVar: 1
+    - _WobbleStrengthVar: 0
     m_Colors:
     - _ActivationDir: {r: -0.94, g: 1.01, b: 0, a: 0}
     - _Color: {r: 0, g: 0.63888884, b: 1, a: 1}
