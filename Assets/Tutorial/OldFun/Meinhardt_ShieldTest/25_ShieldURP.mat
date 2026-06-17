@@ -37,15 +37,15 @@ Material:
     - _ActivationSmooth: 0.319
     - _BaseAlpha: 0.404
     - _BorderFuzz: 0
-    - _BorderGap: 0.176
+    - _BorderGap: 0.59
     - _FadeDelay: 0.505
     - _FresnelAmount: 0.569
     - _HoleGap: 0.718
     - _TileAmount: 22.32
-    - _WaveDelay: 0.197
-    - _WaveHitStrength: 0.452
+    - _WaveDelay: 0.16
+    - _WaveHitStrength: 0.929
     - _WaveMaxTime: 0.75
-    - _WaveThickness: 1.83
+    - _WaveThickness: 1.74
     - _WobbleSpeed: 1.25
     - _WobbleSpeedVar: 1
     - _WobbleStrength: 1

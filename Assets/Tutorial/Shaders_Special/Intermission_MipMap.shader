@@ -3,6 +3,7 @@ Shader "Tutorial/Intermission_MipMap"
     Properties
     {
         _MainTex("Texture", 2D) = "white"{}
+        
         _MipLevel("Mip Level", Range(0, 10)) = 0
         [Toggle] _MIP("MipMap On", Int) = 0
     }
@@ -33,15 +34,12 @@ Shader "Tutorial/Intermission_MipMap"
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
-                float3 normal : NORMAL;
             };
 
             struct Varyings
             {
                 float4 positionHCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float3 positionWS : TEXCOORD1;
-                float3 normalWS : TEXCOORD2;
             };
 
             CBUFFER_START(UnityPerMaterial)
@@ -57,11 +55,7 @@ Shader "Tutorial/Intermission_MipMap"
             {
                 Varyings OUT;
                 OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
-                OUT.positionWS = TransformObjectToWorld(IN.positionOS.xyz);
                 OUT.uv = IN.uv * _MainTex_ST.xy + _MainTex_ST.zw;
-                
-                OUT.normalWS = (TransformObjectToWorldNormal(IN.normal.xyz));
-                
 			    return OUT;
             }
 
