@@ -1,53 +1,67 @@
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "hda/Transparency" //define the name & folders of our Shader (SurfaceShader)
+Shader "Tutorial/5_Transparency"
 {
     Properties
     {
-		_Color("Color", Color) = (1, 1, 1, 1)
+        _Color("Color", Color) = (1,1,1,1)
+		_Cutoff("Cutoff", Float) = 0
     }
-    SubShader //multiple subshaders for different GPUs, Unity will choose the most suited one for current application
+	
+    SubShader 
     {
-		Tags 
-		{
-			"Queue" = "Transparent"
-		}
+        Tags 
+        { 
+            "RenderPipeline" = "UniversalPipeline" 
+            "RenderType" = "Transparent"  // Change RenderType 
+            "Queue" = "Transparent"       // Change Queue, so it gets rendered after all opaque shaders
+        }
 
-        Pass //multiple passes are possible, good for transparency, glass, etc.
+        Pass
         {
-			ZWrite Off
-			
-			Blend SrcAlpha OneMinusSrcAlpha //standard alpha blending
+            ZWrite Off                          // Turn off ZWrite, so no depth gets written anymore
+            Blend SrcAlpha OneMinusSrcAlpha     // Blend function, this is typical alpha blending
+            
+            HLSLPROGRAM
 
+            #pragma vertex vert
+            #pragma fragment frag
 
-            CGPROGRAM //here starts the pure Cg shader code
-			//------------------------------------------------------------------	
-			#pragma vertex VS
-			#pragma fragment PS
-			#include "UnityCG.cginc"
-			// GLOBAL VARS
-			uniform float4 _Color;
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            
+			struct Attributes
+            {
+                float4 positionOS : POSITION;
+            };
 
-			// DATA STRUCTURES
-			// Shader Functions-----------------------
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+                float3 positionWS : TEXCOORD0;
+            };
 
+            CBUFFER_START(UnityPerMaterial)
+				float4 _Color;
+				float _Cutoff;
+            CBUFFER_END
 
-			float4 VS(float4 pos : POSITION) : SV_POSITION
-			{
-				float4 output;
-				output = UnityObjectToClipPos(pos);
-				return output;
+            
+			Varyings vert(Attributes IN)
+            {
+                Varyings OUT;
+                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+                OUT.positionWS = TransformObjectToWorld(IN.positionOS.xyz);
+                return OUT;
+            }
+
+            float4 frag(Varyings IN) : SV_Target
+            {
+				float3 color = 1;
+
+                float alpha = saturate(IN.positionWS.y);
+                
+				return float4(color, alpha);
 			}
-
-			float4 PS(void) : COLOR 
-			{
-				return _Color;
-			}
 			
-			// Techniques
-
-			//------------------------------------------------------------------
-			ENDCG //here ends the pure Cg code
+			ENDHLSL
         }
     }
 }

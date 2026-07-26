@@ -21,7 +21,7 @@ public class RaycastShoot : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!Mouse.current.leftButton.isPressed) return;
+        if (!Mouse.current.leftButton.wasPressedThisFrame && !Mouse.current.rightButton.isPressed) return;
 
         RaycastHit hit;
         if (Physics.Raycast(cam.ScreenPointToRay(Mouse.current.position.value), out hit, 100f, shieldLayer))

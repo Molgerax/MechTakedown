@@ -1,90 +1,82 @@
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "hda/SpaceShield" //define the name & folders of our Shader (SurfaceShader)
+Shader "Tutorial/6_SpaceShield"
 {
     Properties
     {
-		_Color("Color", Color) = (1, 1, 1, 0.5)
-		_Decay("Decay", Float) = 0.0
-		//_CollisionPoint("CollisionPoint", Float)
+		_Color("Color", Color) = (1,1,1,1)
+		_Falloff("Decay", Float) = 0
     }
-    SubShader //multiple subshaders for different GPUs, Unity will choose the most suited one for current application
+	
+    SubShader 
     {
-		Tags 
-		{
-			"Queue" = "Transparent"
-		}
+        Tags 
+        { 
+            "RenderPipeline" = "UniversalPipeline" 
+            "RenderType" = "Transparent" 
+            "Queue" = "Transparent" 
+        }
 
-        Pass //multiple passes are possible, good for transparency, glass, etc.
+        Pass
         {
-			ZWrite Off
-			// Cull Off
-			
-			Blend SrcAlpha OneMinusSrcAlpha //standard alpha blending
-						// One, Zero, SrcColor, SrcAlpha, DstAlpha, DstColor
-						// OneMinusSrcAlpha, OneMinusSrcColor,...
+        	Blend SrcAlpha OneMinusSrcAlpha
+        	ZWrite Off
+        	
+            HLSLPROGRAM
 
-            CGPROGRAM //here starts the pure Cg shader code
-			//------------------------------------------------------------------	
-			#pragma vertex vert
-			#pragma fragment frag
-			#include "UnityCG.cginc"
+            #pragma vertex vert
+            #pragma fragment frag
 
-			// GLOBAL VARS
-			uniform float4 _Color;
-			uniform float _Decay;
-			
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            
+			struct Attributes
+            {
+                float4 positionOS : POSITION;
+            	float3 normalOS : NORMAL;
+            };
 
-			// DATA STRUCTURES
-			struct vertexIn
-			{
-				float4 pos : POSITION;
-				float3 normal : NORMAL;
-			};
-			struct vertexOut
-			{
-				float4 pos : SV_POSITION;
-				float3 normal : TEXCOORD0;  //once again abusing texture coords as 
-				float3 viewDir : TEXCOORD1; //dump for our data
-			};
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+                float3 positionWS : TEXCOORD0;
+                float3 normalWS : TEXCOORD1;
+                float3 viewDirWS : TEXCOORD2;
+            };
 
-			// Shader Functions-----------------------
+            CBUFFER_START(UnityPerMaterial)
+				float4 _Color;
+				float _Falloff;
+            CBUFFER_END
+
+            
+			Varyings vert(Attributes IN)
+            {
+                Varyings OUT;
+                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+                OUT.positionWS = TransformObjectToWorld(IN.positionOS.xyz);
+            	OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);
+            	OUT.viewDirWS = GetWorldSpaceViewDir(OUT.positionWS);
+                return OUT;
+            }
+
+            float4 frag(Varyings IN) : SV_Target
+            {
+				float3 normalDir = normalize(IN.normalWS); // Because we don't know what Unity does in the background, for safety!
+				float3 viewDir = normalize(IN.viewDirWS); // FOR SAFETY!!
 
 
-			vertexOut vert(vertexIn input)
-			{
-				vertexOut output;
-				float4x4 modelMatrix = unity_ObjectToWorld;
-				float4x4 modelMatrixInverse = unity_WorldToObject;
+            	// dot between normal and view is 1 when looking exactly at surface, goes to 0 towards the edge
+            	float NdotV = dot(normalDir, viewDir);
+            	
+            	// 1 - () to flip it, so that we get 1 towards edges
+				// saturate, so it gets clamped between 0 and 1
+            	float fresnel = saturate( 1 - NdotV);
 
-				output.normal = normalize(mul( float4(input.normal, 1), modelMatrixInverse).xyz); 
-							// multiplies float3 with matrix4, then only use 3 with swizzles
-				
-				output.viewDir = normalize(_WorldSpaceCameraPos.xyz - mul(modelMatrix, input.pos).xyz);
-							// first get vertex position by multiplying the modelMatrix with the vertex pos
-							// then subtract the position vector from the camera position vector to get the viewDirection
-							// then normalize to not fuck up the dot product
-				output.pos = UnityObjectToClipPos(input.pos);
-				return output;
-			}
-
-			float4 frag(vertexOut input) : COLOR 
-			{
-				float3 normalDir = normalize(input.normal); // Because we don't know what Unity does in the background, for safety!
-				float3 viewDir = normalize(input.viewDir); // FOR SAFETY!!
-
-				float Opac = min(1, _Color.a / abs( dot(normalDir, viewDir)));
-						// min clamps this between 0 and 1, because abs doesn't let it get negative
-						// The opacity is always at least the Color Alpha, towards the edges, it increases strongly
-
-				//return float4(normalDir, 1); //test for normal direction
-				return float4(_Color.rgb, Opac * _Decay);
+            	// pow(a, b) raises a to the b-th power, the higher the falloff, the thinner the edges get
+				float alpha = saturate(pow(fresnel, _Falloff));
+						
+				return float4(_Color.rgb, alpha);
 			}
 			
-			// Techniques
-
-			//------------------------------------------------------------------
-			ENDCG //here ends the pure Cg code
+			ENDHLSL
         }
     }
 }

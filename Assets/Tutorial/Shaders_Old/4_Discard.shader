@@ -1,63 +1,65 @@
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "hda/Discard" //define the name & folders of our Shader (SurfaceShader)
+Shader "Tutorial/4_Discard"
 {
     Properties
     {
-		_Percentage("Percentage", Float) = 1.0
+		_Cutoff("Cutoff", Float) = 0
     }
-    SubShader //multiple subshaders for different GPUs, Unity will choose the most suited one for current application
+	
+    SubShader 
     {
-        Pass //multiple passes are possible, good for transparency, glass, etc.
+        Tags 
+        { 
+            "RenderPipeline" = "UniversalPipeline" 
+            "RenderType" = "Opaque" 
+            "Queue" = "Geometry" 
+        }
+
+        Pass
         {
-			Cull Off //Set backface culling
+            HLSLPROGRAM
 
-            CGPROGRAM //here starts the pure Cg shader code
-			//------------------------------------------------------------------	
-			#pragma vertex VS
-			#pragma fragment PS
-			#include "UnityCG.cginc"
-			// GLOBAL VARS
-			uniform float _Percentage;
+            #pragma vertex vert
+            #pragma fragment frag
 
-			// DATA STRUCTURES
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            
+			struct Attributes
+            {
+                float4 positionOS : POSITION;
+            };
 
-			struct vertexIn
-			{
-				float4 pos : POSITION;
-			};
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+                float3 positionWS : TEXCOORD0;
+            };
 
-			struct vertexOut //used to transfer data from vert to frag
-			{
-				float4 pos : SV_POSITION;
-            	float4 col : TEXCOORD0; //usually used for UVs, now abused to save color
-				float4 posObject : TEXCOORD1;
-			};
+            CBUFFER_START(UnityPerMaterial)
+				float _Cutoff;
+            CBUFFER_END
 
-			// Shader Functions-----------------------
+            
+			Varyings vert(Attributes IN)
+            {
+                Varyings OUT;
+                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+                OUT.positionWS = TransformObjectToWorld(IN.positionOS.xyz);
+                return OUT;
+            }
 
+            float4 frag(Varyings IN) : SV_Target
+            {
+				float4 output = 1;
 
-			vertexOut VS(vertexIn input)
-			{
-				vertexOut output;
-				output.pos = UnityObjectToClipPos(input.pos); //mul()
-				output.col = input.pos + float4(0.5, 0.5, 0.5, 0); 
-				output.posObject = input.pos;
+                // If value passed to clip() is below 0, the pixel is discarded and not rendered
+                // With a _Cutoff of 0, this means all pixel below the y-Plane of 0 are discarded
+                // _Cutoff of 5 makes it discard all pixels below 5, etc.
+                clip(IN.positionWS.y - _Cutoff);
+                
 				return output;
 			}
-
-			float4 PS(vertexOut input) : COLOR 
-			{
-				
-				clip(-0.5 * input.posObject.y - 0.5 + _Percentage);
-
-				return input.col;
-			}
 			
-			// Techniques
-
-			//------------------------------------------------------------------
-			ENDCG //here ends the pure Cg code
+			ENDHLSL
         }
     }
 }
