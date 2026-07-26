@@ -3,7 +3,7 @@ Shader "Tutorial/6_SpaceShield"
     Properties
     {
 		_Color("Color", Color) = (1,1,1,1)
-		_Falloff("Decay", Float) = 0
+		_Falloff("Falloff", Float) = 8
     }
 	
     SubShader 
@@ -30,7 +30,7 @@ Shader "Tutorial/6_SpaceShield"
 			struct Attributes
             {
                 float4 positionOS : POSITION;
-            	float3 normalOS : NORMAL;
+            	float3 normalOS : NORMAL;	// We can also access the normal of a vertex with this semantic
             };
 
             struct Varyings
@@ -52,7 +52,11 @@ Shader "Tutorial/6_SpaceShield"
                 Varyings OUT;
                 OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
                 OUT.positionWS = TransformObjectToWorld(IN.positionOS.xyz);
+            	
+            	// Once again transform from object to world, but this time, using the Normal function for it
             	OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);
+            	
+            	// For this effect, we also need the view direction, i.e. the direction from the camera to the vertex
             	OUT.viewDirWS = GetWorldSpaceViewDir(OUT.positionWS);
                 return OUT;
             }

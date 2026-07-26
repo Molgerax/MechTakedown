@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: 2_RGBCube
+  m_Name: 2_WorldPosition
   m_Shader: {fileID: 4800000, guid: 8392379282809214cbf701e212ed22ee, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0

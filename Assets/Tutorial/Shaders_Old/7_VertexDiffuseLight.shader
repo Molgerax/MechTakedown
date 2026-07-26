@@ -1,71 +1,81 @@
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "hda/VertexDiffuseLight" //define the name & folders of our Shader (SurfaceShader)
+Shader "Tutorial/7_VertexDiffuseLight"
 {
     Properties
     {
-		_Color("Color", Color) = (1, 1, 1, 1)
+		_Color("Color", Color) = (1,1,1,1)
     }
-    SubShader //multiple subshaders for different GPUs, Unity will choose the most suited one for current application
+	
+    SubShader 
     {
+        Tags 
+        { 
+            "RenderPipeline" = "UniversalPipeline" 
+            "RenderType" = "Opaque" 
+            "Queue" = "Geometry" 
+        }
 
-        Pass //multiple passes are possible, good for transparency, glass, etc.
+        Pass
         {
-			Tags {"LightMode" = "ForwardBase"}
+        	Cull Back
+        	ZWrite On
+        	
+            HLSLPROGRAM
 
-            CGPROGRAM //here starts the pure Cg shader code
-			//------------------------------------------------------------------	
-			#pragma vertex vert
-			#pragma fragment frag
-			#include "UnityCG.cginc"
+            #pragma vertex vert
+            #pragma fragment frag
 
-			// GLOBAL VARS
-			uniform float4 _Color;
-			uniform float4 _LightColor0;
-			
-			// DATA STRUCTURES
-			struct vertexIn
-			{
-				float4 pos : POSITION;
-				float3 normal : NORMAL;
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            // --- NEW ---
+            // for everything lighting-related, we need to include this file
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            // --- NEW ---
+            
+			struct Attributes
+            {
+                float4 positionOS : POSITION;
+            	float3 normalOS : NORMAL;
+            };
 
-			};
-			struct vertexOut
-			{
-				float4 pos : SV_POSITION;
-				float4 col : COLOR;
-			};
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+            	float3 color : COLOR;
+            };
 
-			// Shader Functions-----------------------
+            CBUFFER_START(UnityPerMaterial)
+				float4 _Color;
+            CBUFFER_END
 
+            
+			Varyings vert(Attributes IN)
+            {
+                Varyings OUT;
+                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+            	
+            	// Get normal vector in world space as before
+                float3 normalWS = TransformObjectToWorldNormal(IN.normalOS);
+            	
+            	// Get main light of the scene. Requires a new include file above
+            	Light mainLight = GetMainLight();
+            	
+            	// Dot-product of the light direction and the normal gives us how "lit" that vertex is.
+            	float NdotL = dot(mainLight.direction, normalWS);
+            	
+            	// When facing away from the light, dot products become negative 
+            	// so we use saturate() to clamp the value between 0 and 1
+            	OUT.color = _Color * saturate(NdotL);
+            	
+                return OUT;
+            }
 
-			vertexOut vert(vertexIn input)
-			{
-				vertexOut output;
-				float4x4 modelMatrix = unity_ObjectToWorld;
-				float4x4 modelMatrixInverse = unity_WorldToObject;
-
-				float3 normalDir = normalize(mul(float4(input.normal, 1), modelMatrixInverse).xyz);
-				//float3 normalDir = UnityObjectToWorldNormal(input.normal); //<-- does the same
-
-				float3 lightDir = normalize(_WorldSpaceLightPos0.rgb);
-				
-				float3 diffRefl = _LightColor0.rgb * _Color.rgb * max(0, dot(normalDir, lightDir));
-
-				output.pos = UnityObjectToClipPos(input.pos);
-				output.col = float4(diffRefl, 1);
-				return output;
+            float4 frag(Varyings IN) : SV_Target
+            {
+				float3 color = IN.color;
+						
+				return float4(color, 1);
 			}
-
-			float4 frag(vertexOut input) : COLOR 
-			{
-				return input.col;
-			}
 			
-			// Techniques
-
-			//------------------------------------------------------------------
-			ENDCG //here ends the pure Cg code
+			ENDHLSL
         }
     }
 }

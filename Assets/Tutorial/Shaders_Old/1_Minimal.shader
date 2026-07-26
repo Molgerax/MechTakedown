@@ -1,3 +1,7 @@
+// Each shader needs to start simple with the keyword "Shader" and curly brackets.
+// The name here determines where we find the shader in the drop-down. Each slash separates it into a new "sub-folder".
+// Each shader needs a unique name here, so you can properly find them. I have opted for "Tutorial" as the top-most "folder",
+// so we can find all the tutorial shaders quickly in one place.
 Shader "Tutorial/1_Minimal"
 {
     // Here we put properties that can be adjusted per material, like colors, textures, sliders, etc.

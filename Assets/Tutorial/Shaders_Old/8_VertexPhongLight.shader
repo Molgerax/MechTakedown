@@ -1,360 +1,101 @@
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "hda/VertexPhongLight" //define the name & folders of our Shader (SurfaceShader)
+Shader "Tutorial/8_VertexPhongLight"
 {
     Properties
     {
-		_Color("Color", Color) = (1, 1, 1, 1)
-		_SpecColor("Spec Mat Color", Color) = (1, 1, 1, 1)
-		_Shininess("Shiny Power", Float) = 8
+		_Color("Color", Color) = (1,1,1,1)
+		_Shininess("Shininess", Float) = 4
     }
-    SubShader //multiple subshaders for different GPUs, Unity will choose the most suited one for current application
+	
+    SubShader 
     {
-
-        Pass //BASE PASS FRONT
-        {
-			Tags {"LightMode" = "ForwardBase"}
-			Cull Back
-
-            CGPROGRAM //here starts the pure Cg shader code
-			//------------------------------------------------------------------	
-			#pragma vertex vert
-			#pragma fragment frag
-			#include "UnityCG.cginc" 
-			// -->from UnityLightingCommon.cginc
-
-			// GLOBAL VARS
-			uniform float4 _Color;
-			uniform float4 _SpecColor;
-			uniform float _Shininess;
-			uniform float4 _LightColor0;
-			
-			// DATA STRUCTURES
-			struct vertexIn
-			{
-				float4 pos : POSITION;
-				float3 normal : NORMAL;
-
-			};
-			struct vertexOut
-			{
-				float4 pos : SV_POSITION;
-				float4 col : COLOR;
-				
-			};
-
-			// Shader Functions-----------------------
-
-
-			vertexOut vert(vertexIn input)
-			{
-				vertexOut output;
-				float4x4 modelMatrix = unity_ObjectToWorld;
-				float4x4 modelMatrixInverse = unity_WorldToObject;
-
-				//-------
-				float3 normalDir = normalize(mul(float4(input.normal, 1), modelMatrixInverse).xyz); //float3 normalDir = UnityObjectToWorldNormal(input.normal); //<-- does the same
-				float3 viewDir = normalize(_WorldSpaceCameraPos - mul(modelMatrix, input.pos).xyz);
-
-				float3 lightDir;
-				float attenuation; //how strong light is over distance
-
-				float3 vertexToLight = _WorldSpaceLightPos0.xyz - mul(modelMatrix, input.pos).xyz;
-				float vertexToLightDist = length(vertexToLight);
-
-				//--Emulate if statement, directional light -> w = 0
-				float isDir = _WorldSpaceLightPos0.w;
-				attenuation = (1 - isDir) + (isDir * (1 / vertexToLightDist));
-				// if w = 0 --> att = 1, if w = 1, --> LINEAR attenuation;
-
-				lightDir = (isDir) * normalize(vertexToLight) + (1 - isDir) * normalize(_WorldSpaceLightPos0.xyz);
-				// if Directional light, use worldspacelightpos, if point or spotlight, use vertex to light
-
-				float3 ambientLight = UNITY_LIGHTMODEL_AMBIENT.rgb * _Color.rgb;
-
-				float3 diffRefl = attenuation * _LightColor0.rgb * _Color.rgb * max(0, dot(normalDir, lightDir));
-				
-				
-				//either 0 or 1, cuts off if light is behind you
-				float specCutOff = clamp(10000000 * dot(normalDir, lightDir), 0, 1);
-
-				float3 specRefl = pow(max(0, dot(viewDir, reflect(-lightDir, normalDir))), _Shininess) 
-									  * attenuation * _LightColor0.rgb * _SpecColor.rgb * specCutOff;
-
-
-				output.pos = UnityObjectToClipPos(input.pos);
-				output.col = float4(ambientLight + diffRefl + specRefl, 1);
-				return output;
-			}
-
-			float4 frag(vertexOut input) : COLOR 
-			{
-				return input.col;
-			}
-			
-			// Techniques
-
-			//------------------------------------------------------------------
-			ENDCG //here ends the pure Cg code
+        Tags 
+        { 
+            "RenderPipeline" = "UniversalPipeline" 
+            "RenderType" = "Opaque" 
+            "Queue" = "Geometry" 
         }
 
-		Pass //ADD PASS FRONT (for additional lights)
+        Pass
         {
-			Tags {"LightMode" = "ForwardAdd"}
-			Cull Back
-			Blend One One
+        	Cull Back
+        	ZWrite On
+        	
+            HLSLPROGRAM
 
-            CGPROGRAM //here starts the pure Cg shader code
-			//------------------------------------------------------------------	
-			#pragma vertex vert
-			#pragma fragment frag
-			#include "UnityCG.cginc" 
-			// -->from UnityLightingCommon.cginc
+            #pragma vertex vert
+            #pragma fragment frag
 
-			// GLOBAL VARS
-			uniform float4 _Color;
-			uniform float4 _SpecColor;
-			uniform float _Shininess;
-			uniform float4 _LightColor0;
-			
-			// DATA STRUCTURES
-			struct vertexIn
-			{
-				float4 pos : POSITION;
-				float3 normal : NORMAL;
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            
+			struct Attributes
+            {
+                float4 positionOS : POSITION;
+            	float3 normalOS : NORMAL;
+            };
 
-			};
-			struct vertexOut
-			{
-				float4 pos : SV_POSITION;
-				float4 col : COLOR;
-				
-			};
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+            	float3 color : COLOR;
+            };
 
-			// Shader Functions-----------------------
+            CBUFFER_START(UnityPerMaterial)
+				float4 _Color;
+				float _Shininess;
+            CBUFFER_END
 
+            
+			Varyings vert(Attributes IN)
+            {
+                Varyings OUT;
+                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+            	
+            	float3 positionWS = TransformObjectToWorld(IN.positionOS.xyz);
+            	float3 normalWS = TransformObjectToWorldNormal(IN.normalOS);
+            	float3 viewDir = GetWorldSpaceNormalizeViewDir(positionWS);
+            	
+            	
+            	// Phong lighting consists of diffuse, specular and ambient lighting
+            	
+            	Light mainLight = GetMainLight();
+            	float NdotL = saturate(dot(mainLight.direction, normalWS));
+            	
+            	// Diffuse reflection is just the normal NdotL factor multiplied by the surface color and the light color
+				float3 diffuseReflection = _Color.rgb * NdotL * mainLight.color;
+            	
+            	
+            	// We reflect the light along the normal of the surface
+            	float3 reflectedLightVector = reflect(mainLight.direction, normalWS);
+            	
+            	
+            	// now we can use the dot-product between the reflected light (often L) and the view vector
+            	// !!Mind the minus!! This is important, because usually, the two vectors are opposed, i.e. the light is going
+            	// the other way than the camera is looking, so one of them needs to get flipped so we have the correct sign
+            	float VdotL = saturate(dot(-viewDir, reflectedLightVector));
+            	
+            	// Specular reflection is how much reflected light gets into our eye, raised to some power
+				float3 specularReflection = pow(VdotL, _Shininess) * mainLight.color;
+            	
+            	// Ambient light is basically the environment light, i.e. global illumination from the sky, the objects around it, etc.
+            	// This can be simply sampled by calling this function using the world-space normal as an input.
+            	// Ambient light gives us something to fill the otherwise pitch-black shadows
+            	float3 ambientLight = EvaluateAmbientProbe(normalWS) * _Color.rgb;
+            	
+            	// add it all together and we get our final output
+				OUT.color = float4(diffuseReflection + specularReflection + ambientLight, 1);
+            	
+                return OUT;
+            }
 
-			vertexOut vert(vertexIn input)
-			{
-				vertexOut output;
-				float4x4 modelMatrix = unity_ObjectToWorld;
-				float4x4 modelMatrixInverse = unity_WorldToObject;
-
-				//-------
-				float3 normalDir = normalize(mul(float4(input.normal, 1), modelMatrixInverse).xyz); //float3 normalDir = UnityObjectToWorldNormal(input.normal); //<-- does the same
-				float3 viewDir = normalize(_WorldSpaceCameraPos - mul(modelMatrix, input.pos).xyz);
-
-				float3 lightDir;
-				float attenuation; //how strong light is over distance
-
-				float3 vertexToLight = _WorldSpaceLightPos0.xyz - mul(modelMatrix, input.pos).xyz;
-				float vertexToLightDist = length(vertexToLight);
-
-				//--Emulate if statement, directional light -> w = 0
-				float isDir = _WorldSpaceLightPos0.w;
-				attenuation = (1 - isDir) + (isDir * (1 / vertexToLightDist));
-				// if w = 0 --> att = 1, if w = 1, --> LINEAR attenuation;
-
-				lightDir = (isDir) * normalize(vertexToLight) + (1 - isDir) * normalize(_WorldSpaceLightPos0.xyz);
-				// if Directional light, use worldspacelightpos, if point or spotlight, use vertex to light
-
-				float3 diffRefl = attenuation * _LightColor0.rgb * _Color.rgb * max(0, dot(normalDir, lightDir));
-				
-				
-				//either 0 or 1, cuts off if light is behind you
-				float specCutOff = clamp(10000000 * dot(normalDir, lightDir), 0, 1);
-
-				float3 specRefl = pow(max(0, dot(viewDir, reflect(-lightDir, normalDir))), _Shininess) 
-									  * attenuation * _LightColor0.rgb * _SpecColor.rgb * specCutOff;
-
-
-				output.pos = UnityObjectToClipPos(input.pos);
-				output.col = float4(diffRefl + specRefl, 1);
-				return output;
-			}
-
-			float4 frag(vertexOut input) : COLOR 
-			{
-				return input.col;
-			}
-			
-			// Techniques
-
-			//------------------------------------------------------------------
-			ENDCG //here ends the pure Cg code
-        }
-
-		Pass //BASE PASS BACK
-        {
-			Tags {"LightMode" = "ForwardBase"}
-			Cull Front
-
-            CGPROGRAM //here starts the pure Cg shader code
-			//------------------------------------------------------------------	
-			#pragma vertex vert
-			#pragma fragment frag
-			#include "UnityCG.cginc" 
-			// -->from UnityLightingCommon.cginc
-
-			// GLOBAL VARS
-			uniform float4 _Color;
-			uniform float4 _SpecColor;
-			uniform float _Shininess;
-			uniform float4 _LightColor0;
-			
-			// DATA STRUCTURES
-			struct vertexIn
-			{
-				float4 pos : POSITION;
-				float3 normal : NORMAL;
-
-			};
-			struct vertexOut
-			{
-				float4 pos : SV_POSITION;
-				float4 col : COLOR;
-				
-			};
-
-			// Shader Functions-----------------------
-
-
-			vertexOut vert(vertexIn input)
-			{
-				vertexOut output;
-				float4x4 modelMatrix = unity_ObjectToWorld;
-				float4x4 modelMatrixInverse = unity_WorldToObject;
-
-				//-------
-				float3 normalDir = normalize(mul(float4(-input.normal, 1), modelMatrixInverse).xyz); //float3 normalDir = UnityObjectToWorldNormal(input.normal); //<-- does the same
-				float3 viewDir = normalize(_WorldSpaceCameraPos - mul(modelMatrix, input.pos).xyz);
-
-				float3 lightDir;
-				float attenuation; //how strong light is over distance
-
-				float3 vertexToLight = _WorldSpaceLightPos0.xyz - mul(modelMatrix, input.pos).xyz;
-				float vertexToLightDist = length(vertexToLight);
-
-				//--Emulate if statement, directional light -> w = 0
-				float isDir = _WorldSpaceLightPos0.w;
-				attenuation = (1 - isDir) + (isDir * (1 / vertexToLightDist));
-				// if w = 0 --> att = 1, if w = 1, --> LINEAR attenuation;
-
-				lightDir = (isDir) * normalize(vertexToLight) + (1 - isDir) * normalize(_WorldSpaceLightPos0.xyz);
-				// if Directional light, use worldspacelightpos, if point or spotlight, use vertex to light
-
-				float3 ambientLight = UNITY_LIGHTMODEL_AMBIENT.rgb * _Color.rgb;
-
-				float3 diffRefl = attenuation * _LightColor0.rgb * _Color.rgb * max(0, dot(normalDir, lightDir));
-				
-				
-				//either 0 or 1, cuts off if light is behind you
-				float specCutOff = clamp(10000000 * dot(normalDir, lightDir), 0, 1);
-
-				float3 specRefl = pow(max(0, dot(viewDir, reflect(-lightDir, normalDir))), _Shininess) 
-									  * attenuation * _LightColor0.rgb * _SpecColor.rgb * specCutOff;
-
-
-				output.pos = UnityObjectToClipPos(input.pos);
-				output.col = float4(ambientLight + diffRefl + specRefl, 1);
-				return output;
-			}
-
-			float4 frag(vertexOut input) : COLOR 
-			{
-				return input.col;
+            float4 frag(Varyings IN) : SV_Target
+            {
+				float3 color = IN.color;
+						
+				return float4(color, 1);
 			}
 			
-			// Techniques
-
-			//------------------------------------------------------------------
-			ENDCG //here ends the pure Cg code
-        }
-
-		Pass //ADD PASS FRONT (for additional lights)
-        {
-			Tags {"LightMode" = "ForwardAdd"}
-			Cull Front
-			Blend One One
-
-            CGPROGRAM //here starts the pure Cg shader code
-			//------------------------------------------------------------------	
-			#pragma vertex vert
-			#pragma fragment frag
-			#include "UnityCG.cginc" 
-			// -->from UnityLightingCommon.cginc
-
-			// GLOBAL VARS
-			uniform float4 _Color;
-			uniform float4 _SpecColor;
-			uniform float _Shininess;
-			uniform float4 _LightColor0;
-			
-			// DATA STRUCTURES
-			struct vertexIn
-			{
-				float4 pos : POSITION;
-				float3 normal : NORMAL;
-
-			};
-			struct vertexOut
-			{
-				float4 pos : SV_POSITION;
-				float4 col : COLOR;
-				
-			};
-
-			// Shader Functions-----------------------
-
-
-			vertexOut vert(vertexIn input)
-			{
-				vertexOut output;
-				float4x4 modelMatrix = unity_ObjectToWorld;
-				float4x4 modelMatrixInverse = unity_WorldToObject;
-
-				//-------
-				float3 normalDir = normalize(mul(float4(-input.normal, 1), modelMatrixInverse).xyz); //float3 normalDir = UnityObjectToWorldNormal(input.normal); //<-- does the same
-				float3 viewDir = normalize(_WorldSpaceCameraPos - mul(modelMatrix, input.pos).xyz);
-
-				float3 lightDir;
-				float attenuation; //how strong light is over distance
-
-				float3 vertexToLight = _WorldSpaceLightPos0.xyz - mul(modelMatrix, input.pos).xyz;
-				float vertexToLightDist = length(vertexToLight);
-
-				//--Emulate if statement, directional light -> w = 0
-				float isDir = _WorldSpaceLightPos0.w;
-				attenuation = (1 - isDir) + (isDir * (1 / vertexToLightDist));
-				// if w = 0 --> att = 1, if w = 1, --> LINEAR attenuation;
-
-				lightDir = (isDir) * normalize(vertexToLight) + (1 - isDir) * normalize(_WorldSpaceLightPos0.xyz);
-				// if Directional light, use worldspacelightpos, if point or spotlight, use vertex to light
-
-				float3 diffRefl = attenuation * _LightColor0.rgb * _Color.rgb * max(0, dot(normalDir, lightDir));
-				
-				
-				//either 0 or 1, cuts off if light is behind you
-				float specCutOff = clamp(10000000 * dot(normalDir, lightDir), 0, 1);
-
-				float3 specRefl = pow(max(0, dot(viewDir, reflect(-lightDir, normalDir))), _Shininess) 
-									  * attenuation * _LightColor0.rgb * _SpecColor.rgb * specCutOff;
-
-
-				output.pos = UnityObjectToClipPos(input.pos);
-				output.col = float4(diffRefl + specRefl, 1);
-				return output;
-			}
-
-			float4 frag(vertexOut input) : COLOR 
-			{
-				return input.col;
-			}
-			
-			// Techniques
-
-			//------------------------------------------------------------------
-			ENDCG //here ends the pure Cg code
+			ENDHLSL
         }
     }
 }

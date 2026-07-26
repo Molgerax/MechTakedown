@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: 3_RGBCube_Fancy
+  m_Name: 3_MoreProperties
   m_Shader: {fileID: 4800000, guid: 40b9be8f055472b4c8c058cc6ff1cb0a, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -26,9 +26,11 @@ Material:
     m_Ints: []
     m_Floats:
     - _BorderWidth: 1
-    - _MaxDist: 5
+    - _MaxDist: 1.9
+    - _RingScale: 5
     m_Colors:
     - _ColorA: {r: 1, g: 1, b: 1, a: 1}
     - _ColorB: {r: 0, g: 0, b: 0, a: 1}
+    - _Sphere: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

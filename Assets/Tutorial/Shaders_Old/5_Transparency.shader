@@ -17,8 +17,14 @@ Shader "Tutorial/5_Transparency"
 
         Pass
         {
+            Cull Back                           // Can be Back, Front or Off. Default is Back, so the backside of triangles are not rendered.
             ZWrite Off                          // Turn off ZWrite, so no depth gets written anymore
             Blend SrcAlpha OneMinusSrcAlpha     // Blend function, this is typical alpha blending
+            // SrcAlpha OneMinusSrcAlpha acts as a simple lerp blend: finalCol = lerp(source, destination, sourceAlpha)
+            // where "source" is the currently rendered pixel and destination is the pixel we are writing to
+            
+            // For more blending functions, see the Unity documentation: https://docs.unity3d.com/6000.3/Documentation/Manual/SL-Blend.html
+            
             
             HLSLPROGRAM
 
@@ -56,6 +62,7 @@ Shader "Tutorial/5_Transparency"
             {
 				float3 color = 1;
 
+                // here, we just set the alpha to the y-position in world space and clamping it to 0 and 1 with saturate().
                 float alpha = saturate(IN.positionWS.y);
                 
 				return float4(color, alpha);
