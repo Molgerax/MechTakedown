@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: 24_CelShading
-  m_Shader: {fileID: 4800000, guid: c0e054b493d84d94fb8622638a807e75, type: 3}
+  m_Name: 19_Procedural
+  m_Shader: {fileID: 4800000, guid: d4f763fea0901fb4c89cb398c9dca579, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -25,7 +25,8 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Cutoff: 0.592
+    - _Cutoff: 0.094
+    - _Frequency: 16
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
