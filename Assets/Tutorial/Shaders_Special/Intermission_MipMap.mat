@@ -32,7 +32,7 @@ Material:
     m_Floats:
     - _MIP: 1
     - _MIP_OFF: 0
-    - _MipLevel: 6.67
+    - _MipLevel: 2.79
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1
