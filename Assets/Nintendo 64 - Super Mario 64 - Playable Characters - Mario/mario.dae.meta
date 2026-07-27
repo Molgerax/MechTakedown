@@ -3,9 +3,74 @@ guid: 70803d372ad743e4aad1e96c614ca10a
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_cap
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_eyes
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_face
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_hair
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_hair_sideburn
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_hand
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_m_logo
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_mustache
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_overalls
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_shoes
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_wings_half_1
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_wings_half_2
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mario_yellow_button
+    second: {fileID: 2100000, guid: 7d8c2a220bf522649a522d950321f8ed, type: 2}
   materials:
-    materialImportMode: 2
+    materialImportMode: 0
     materialName: 0
     materialSearch: 1
     materialLocation: 1
