@@ -9,9 +9,9 @@ Shader "Tutorial/17_ParallaxOcclusionMapping"
 		_Shininess("Shiny", Float) = 8
 		[NoScaleOffset] _ParallaxMap("Heightmap", 2D) = "black" {}
 		_Parallax("Height", Range(0.0, 0.5)) = 0.01
-    	
     	_NumSteps("Parallax Step Limit", Range(1, 32)) = 16
 		
+    	// Okay, so this is how we include "shader_features", which are like script-toggles. Note the name here
         [Toggle] _FLIP_HEIGHT("Flip Height Texture", Int) = 0
     }
     
@@ -29,6 +29,8 @@ Shader "Tutorial/17_ParallaxOcclusionMapping"
         {
             HLSLPROGRAM 
 
+            // we now have a feature that can be flipped on and off. Note that we need to append "_ON" to the property
+            // we declared above.
             #pragma shader_feature _ _FLIP_HEIGHT_ON
             
             #pragma vertex vert
@@ -93,7 +95,8 @@ Shader "Tutorial/17_ParallaxOcclusionMapping"
             }
 
             // Some height map textures act more as depth map, i.e. they cave inwards. For this, we made this function
-            // so that we can apply the flip to it, if it has been selected in the material properties
+            // so that we can apply the flip to it, if it has been selected in the material properties.
+            // if the shader_feature is active, it will execute the code within the #ifdef and #endif
             float SampleHeightMap(float2 uv)
             {
             	float sample = SAMPLE_TEXTURE2D_LOD(_ParallaxMap, sampler_ParallaxMap, TRANSFORM_TEX(uv, _BumpMap), 0).r;
