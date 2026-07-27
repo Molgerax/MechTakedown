@@ -1,89 +1,97 @@
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "hda/MultiTexture" //define the name & folders of our Shader (SurfaceShader)
+Shader "Tutorial/14_MultiTexture"
 {
+	// For this shader, let us combine two textures in an interesting way!
+	
     Properties
     {
-		_Color("Color", Color) = (1, 1, 1, 1)
-		_MainTex("Textured Image", 2D) = "white" {}
-		_NightTex("Textured Image", 2D) = "white" {}
+    	_DayTex("Day Texture", 2D) = "white" {}
+    	_NightTex("Night Texture", 2D) = "black" {}
+    	_TransitionThickness("Transition Thickness", Range(0, 1)) = 1
     }
-    SubShader //multiple subshaders for different GPUs, Unity will choose the most suited one for current application
+	
+    SubShader 
     {
+        Tags 
+        { 
+            "RenderPipeline" = "UniversalPipeline" 
+            "RenderType" = "Opaque" 
+            "Queue" = "Geometry" 
+        }
 
-        Pass //PASS 0 -- BASE BACK, needs to render backside first due to no depth test
+        Pass
         {
-			Tags {"LightMode" = "ForwardBase"}
+        	Cull Back
+        	ZWrite On
+        	
+            HLSLPROGRAM
 
-            CGPROGRAM //here starts the pure Cg shader code
-			//------------------------------------------------------------------	
-			#pragma vertex vert
-			#pragma fragment frag
-			#include "UnityCG.cginc"
+            #pragma vertex vert
+            #pragma fragment frag
 
-			// GLOBAL VARS
-			uniform sampler2D _MainTex;
-			uniform float4 _MainTex_ST;
-			uniform sampler2D _NightTex;
-			uniform float4 _NightTex_ST;
-			uniform float4 _Color;
-			uniform float _Cutoff;
-			uniform float4 _LightColor0;
-			
-			// DATA STRUCTURES
-			struct vertexIn
-			{
-				float4 pos : POSITION;
-				float3 normal : NORMAL;
-				float4 texcoords : TEXCOORD0;
-			};
-			struct vertexOut
-			{
-				float4 pos : SV_POSITION;
-				float4 col : COLOR;
-				float4 tex : TEXCOORD0;
-				float lol : TEXCOORD1;
-			};
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            
+			struct Attributes
+            {
+                float4 positionOS : POSITION;
+            	float3 normalOS : NORMAL;
+            	float2 uv : TEXCOORD0;
+            };
 
-			// Shader Functions-----------------------
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+            	float3 normalWS : TEXCOORD0;
+            	float2 uv : TEXCOORD1;
+            };
 
+            CBUFFER_START(UnityPerMaterial)
+				float4 _DayTex_ST;
+				float4 _NightTex_ST;
+				float _TransitionThickness;
+            CBUFFER_END
 
-			vertexOut vert(vertexIn input)
-			{
-				vertexOut output;
-				float4x4 modelMatrix = unity_ObjectToWorld;
-				float4x4 modelMatrixInverse = unity_WorldToObject;
+            TEXTURE2D(_DayTex);
+            SAMPLER(sampler_DayTex);
+            TEXTURE2D(_NightTex);
+            SAMPLER(sampler_NightTex);
+            
+			Varyings vert(Attributes IN)
+            {
+                Varyings OUT;
+                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+            	OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);
+            	OUT.uv = IN.uv;
+                return OUT;
+            }
 
-				float3 normalDir = normalize(mul(float4(input.normal, 1), modelMatrixInverse).xyz);
-				//float3 normalDir = UnityObjectToWorldNormal(input.normal); //<-- does the same
-
-				float3 lightDir = normalize(_WorldSpaceLightPos0.rgb);
-				
-				float3 diffRefl = _LightColor0.rgb * max(0, dot(normalDir, lightDir));
-
-				output.lol = max(0, dot(normalDir, lightDir)); //maps between 0 and 1
-				
-				output.tex = input.texcoords;
-
-				output.pos = UnityObjectToClipPos(input.pos);
-				output.col = float4(diffRefl, 1);
-				return output;
+            float4 frag(Varyings IN) : SV_Target
+            {
+            	float3 normalWS = normalize(IN.normalWS);
+            	
+            	float2 uvDay = TRANSFORM_TEX(IN.uv, _DayTex);
+            	float3 daySample = SAMPLE_TEXTURE2D(_DayTex, sampler_DayTex, uvDay).rgb;
+            	
+            	float2 uvNight = TRANSFORM_TEX(IN.uv, _NightTex);
+            	float3 nightSample = SAMPLE_TEXTURE2D(_NightTex, sampler_NightTex, uvNight).rgb;
+            	
+            	
+            	Light mainLight = GetMainLight();
+            	float NdotL = dot(mainLight.direction, normalWS);
+            	
+            	// smoothstep(a, b, x) does a few things:
+            	// It uses a and b as bottom and top limits. if x is below a, it returns 0, and if it is above b, it returns 1.
+            	// All values of x between a and b are then smoothly interpolated between 0 and 1, so you get a nice transition.
+            	// Play around with the _TransitionThickness slider and try to get a feel for it
+            	float remapped = smoothstep(-1 * _TransitionThickness, 1 * _TransitionThickness, NdotL);
+            	
+            	// Because the result of smoothstep() is always between 0 and 1, we can plug it in nicely into a lerp function
+            	float3 color = lerp(nightSample, daySample, remapped);
+            	
+				return float4(color, 1);
 			}
-
-			float4 frag(vertexOut input) : COLOR 
-			{
-				float4 texColDay = tex2D(_MainTex, (input.tex.xy * _MainTex_ST.xy) + _MainTex_ST.zw);
-				float4 texColNight = tex2D(_NightTex, (input.tex.xy * _NightTex_ST.xy) + _NightTex_ST.zw) * 0.5f;
-				
-				float4 finalCol = lerp(texColNight, texColDay, input.lol); 
-
-				return finalCol;
-			}
 			
-			// Techniques
-
-			//------------------------------------------------------------------
-			ENDCG //here ends the pure Cg code
+			ENDHLSL
         }
     }
 }

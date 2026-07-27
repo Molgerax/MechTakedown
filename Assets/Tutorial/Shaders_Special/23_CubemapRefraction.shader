@@ -8,7 +8,7 @@ Shader "Tutorial/23_CubemapRefraction"
 		_Color("Diff Color", Color) = (1, 1, 1, 1)
 		_Shininess("Shiny", Float) = 8
     	_MipMapLevel("Mip Level", Range(0, 8)) = 0
-    	_IOR("Index of Refraction", Range(-0.25, 1)) = 0
+    	_IOR("Index of Refraction", Range(0, 2)) = 0
     }
     
 
@@ -144,11 +144,15 @@ Shader "Tutorial/23_CubemapRefraction"
 
             	float2 screenUV = input.screenUV.xy / input.screenUV.w;
             	
-            	float3 refractionVector = refract(viewDir, normalDir, _IOR);
+            	float3 refractionVector = refract(-viewDir, normalDir, _IOR - 1);
 
             	float3 sampleCubeDir = TransformWorldToTangentDir(refractionVector, local2WorldTranspose, true);
+				//sampleCubeDir = TransformWorldToViewNormal(refractionVector, false);
+            	
             	float3 cubemapRefl = SAMPLE_TEXTURECUBE_LOD(_ReflectionMap, sampler_ReflectionMap, sampleCubeDir, _MipMapLevel);
 
+
+            	//screenUV += TransformWorldToViewNormal(refractionVector).xy;
             	screenUV += sampleCubeDir.xy;
             	cubemapRefl = SampleSceneColor(screenUV);
             	

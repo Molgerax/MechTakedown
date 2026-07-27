@@ -1,16 +1,14 @@
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "Tutorial/15_NormalMapping" //define the name & folders of our Shader (SurfaceShader)
+Shader "Tutorial/15_NormalMapping" 
 {
     Properties
     {
-		_BumpMap("Normal", 2D) = "bump" {}
+		_BumpMap("Normal", 2D) = "bump" {} // Bump is the default texture for normal maps
 		_Color("Diff Color", Color) = (1, 1, 1, 1)
 		_Shininess("Shiny", Float) = 8
     }
     
 
-    SubShader //multiple subshaders for different GPUs, Unity will choose the most suited one for current application
+    SubShader
     {
     	Tags 
         { 
@@ -19,11 +17,11 @@ Shader "Tutorial/15_NormalMapping" //define the name & folders of our Shader (Su
             "Queue" = "Geometry" 
         }
 
-        Pass //PASS 0 -- BASE with Ambient Light
+        Pass
         {
 			Tags {"LightMode" = "UniversalForward"}
 
-            HLSLPROGRAM //here starts the pure Cg shader code
+            HLSLPROGRAM
 
             #pragma vertex vert
             #pragma fragment frag
@@ -42,12 +40,11 @@ Shader "Tutorial/15_NormalMapping" //define the name & folders of our Shader (Su
             
             struct Varyings
             {
-            	float4 pos : SV_POSITION;
-            	float4 uv : TEXCOORD0;
-            	float3 posWS : TEXCOORD1;
+            	float4 positionHCS : SV_POSITION;
+            	float2 uv : TEXCOORD0;
+            	float3 positionWS : TEXCOORD1;
             	float4 tangentWS : TEXCOORD2;
             	float3 normalWS : TEXCOORD3;
-            	float3 binormalWS : TEXCOORD4;
             };
 
             
@@ -64,65 +61,53 @@ Shader "Tutorial/15_NormalMapping" //define the name & folders of our Shader (Su
             // Shader Functions-----------------------
             Varyings vert(Attributes IN)
             {
-            	Varyings output;
-
-
-            	// Old way of doing it
-            	output.tangentWS = float4(TransformObjectToWorld(IN.tangent.xyz), IN.tangent.w);
-            	output.normalWS = TransformObjectToWorldNormal(IN.normal);
-            	output.binormalWS = normalize(cross(output.normalWS, output.tangentWS) 
-            							* IN.tangent.w); //input.tangent.w specific to unity
+            	Varyings OUT;
+            	
 
 				// New way of doing it
             	VertexNormalInputs inputs = GetVertexNormalInputs(IN.normal, IN.tangent);
-            	output.tangentWS = float4(inputs.tangentWS, IN.tangent.w);
-            	output.normalWS = inputs.normalWS;
-            	output.binormalWS = inputs.tangentWS;
+            	OUT.tangentWS = float4(inputs.tangentWS, IN.tangent.w);
+            	OUT.normalWS = inputs.normalWS;
 
             	
-            	output.pos = TransformObjectToHClip(IN.pos);
-            	output.posWS = TransformObjectToWorld(IN.pos);
-            	output.uv = IN.uv;
+            	OUT.positionHCS = TransformObjectToHClip(IN.pos);
+            	OUT.positionWS = TransformObjectToWorld(IN.pos);
+            	OUT.uv = TRANSFORM_TEX(IN.uv, _BumpMap);
             	
-            	return output;
+            	return OUT;
             }
             
-            float4 frag(Varyings input) : COLOR 
+            float4 frag(Varyings IN) : COLOR 
             {	
-            	float4 encodedNormal = SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, input.uv.xy * _BumpMap_ST.xy + _BumpMap_ST.zw);
+            	// First we sample the normal texture
+            	float4 encodedNormal = SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, IN.uv);
 
-				// Old way
-            	float3 localCoord = float3(2 * encodedNormal.r - 1, 2 * encodedNormal.g - 1, 0);
-            	localCoord.z = sqrt(1 - dot(localCoord, localCoord));
+            	// Then we decode it from the texture, Unity takes care of the way the textures are packed here
+            	float3 decodedNormal = UnpackNormal(encodedNormal);
+            	// Then we construct the TangentToWorld transformation matrix at this specific pixel
+            	float3x3 tangentToWorld = CreateTangentToWorld(IN.normalWS, IN.tangentWS.xyz, IN.tangentWS.w);
+            	// At last, we transform the decoded normal from tangent space to world space, so we can use it as usual
+            	float3 normalWS = TransformTangentToWorldDir(decodedNormal, tangentToWorld, true);
             	
-            	float3x3 local2WorldTranspose = float3x3(
-            			input.tangentWS.xyz,
-            			input.binormalWS * input.tangentWS.w,
-            			input.normalWS);
 
-            	float3 normalDir = normalize(mul(localCoord, local2WorldTranspose));
-
-            	// New way
-            	localCoord = UnpackNormal(encodedNormal);
-            	local2WorldTranspose = CreateTangentToWorld(input.normalWS, input.tangentWS.xyz, input.tangentWS.w);
-            	normalDir = TransformTangentToWorldDir(localCoord, local2WorldTranspose, true);
             	
-            	
-            	float3 viewDir = normalize(_WorldSpaceCameraPos - input.posWS.xyz);
-
+            	// Now just the same as usual (seen in 9_PixelPhongLight), using the new "normalWS" constructed from the normal map
             	Light light = GetMainLight();
+            	float3 viewDir = GetWorldSpaceNormalizeViewDir(IN.positionWS);
+            
+            	float NdotL = saturate(dot(light.direction, normalWS));
             	
-            
-            	float3 diffRefl = _LightColor0.rgb * _Color.rgb * max(0, dot(normalDir, light.direction));
+            	float3 objectColor = _Color.rgb;
+            	float3 diffuseReflection = objectColor * NdotL * light.color;
             	
-            	float3 ambientLight = UNITY_LIGHTMODEL_AMBIENT.rgb * _Color.rgb;
+            	float3 reflectedLightVector = reflect(light.direction, normalWS);
+            	float VdotL = saturate(dot(-viewDir, reflectedLightVector));
+            	float3 specularReflection = pow(VdotL, _Shininess) * light.color;
+            	float3 ambientLight = EvaluateAmbientProbe(normalWS) * objectColor;
+            	
+            	float3 color = diffuseReflection + specularReflection + ambientLight;
             
-            	float specCutOff = step(0, dot(normalDir, light.direction)); //if dot is bigger than 0, return 1, else 0
-            
-            	float3 specRefl = pow(max(0, dot(viewDir, reflect(-light.direction, normalDir))), _Shininess) 
-            						  * _LightColor0.rgb * specCutOff;
-            
-            	return float4(specRefl + ambientLight + diffRefl, 1);
+            	return float4(color, 1);
             }
             	
 			ENDHLSL

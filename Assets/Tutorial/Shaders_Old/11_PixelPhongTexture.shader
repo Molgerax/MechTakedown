@@ -47,6 +47,7 @@ Shader "Tutorial/11_PixelPhongTexture"
             };
 
             CBUFFER_START(UnityPerMaterial)
+				float4 _MainTex_ST;
 				float4 _Color;
 				float _Shininess;
             CBUFFER_END
@@ -60,7 +61,7 @@ Shader "Tutorial/11_PixelPhongTexture"
                 OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
             	OUT.positionWS = TransformObjectToWorld(IN.positionOS.xyz);
             	OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);
-            	OUT.uv = IN.uv;
+            	OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);
                 return OUT;
             }
 
@@ -69,10 +70,7 @@ Shader "Tutorial/11_PixelPhongTexture"
             	float3 normalWS = normalize(IN.normalWS);
             	float3 viewDir = GetWorldSpaceNormalizeViewDir(IN.positionWS);
             	
-            	float2 uv = IN.uv;
-            	
-            	// Use this function, it requires a texture, sampler and the uv coordinates
-            	float3 objectColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv).rgb;
+            	float3 objectColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uv).rgb;
             	
             	// Let's multiply the texture color with our _Color property, so we can tint it
             	objectColor *= _Color.rgb;
@@ -81,6 +79,8 @@ Shader "Tutorial/11_PixelPhongTexture"
             	
             	float NdotL = saturate(dot(mainLight.direction, normalWS));
             	
+            	// Now, we just replace every instance of "_Color" with "objectColor", so it uses the texture as the color
+            	// at any given pixel
             	float3 diffuseReflection = objectColor * NdotL * mainLight.color;
             	
             	float3 reflectedLightVector = reflect(mainLight.direction, normalWS);
