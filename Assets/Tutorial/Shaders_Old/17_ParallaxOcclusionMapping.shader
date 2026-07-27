@@ -4,7 +4,7 @@ Shader "Tutorial/17_ParallaxOcclusionMapping"
 	
     Properties
     {
-		_BumpMap("Normal", 2D) = "bump" {}
+		[Normal] _BumpMap("Normal", 2D) = "bump" {}
 		_Color("Diff Color", Color) = (1, 1, 1, 1)
 		_Shininess("Shiny", Float) = 8
 		[NoScaleOffset] _ParallaxMap("Heightmap", 2D) = "black" {}

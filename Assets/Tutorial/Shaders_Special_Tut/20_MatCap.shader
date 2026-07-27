@@ -52,7 +52,7 @@ Shader "Tutorial/20_MatCap_Tut"
 			    OUT.positionHCS = TransformObjectToHClip(IN.positionOS);
 			    OUT.positionWS = TransformObjectToWorld(IN.positionOS);
 			    OUT.normalWS = TransformObjectToWorldNormal(IN.normal);
-			    OUT.normalVS = TransformWorldToViewDir(IN.normal);
+			    OUT.normalVS = TransformWorldToViewDir(OUT.normalWS);
 			    
 			    return OUT;
             }

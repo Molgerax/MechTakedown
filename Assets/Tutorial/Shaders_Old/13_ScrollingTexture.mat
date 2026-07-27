@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: 20_MatCap_Tut
-  m_Shader: {fileID: 4800000, guid: 24096a85aa9f616449d049bc9855bd52, type: 3}
+  m_Name: 13_ScrollingTexture
+  m_Shader: {fileID: 4800000, guid: 7206f3efd9080db4ea400bc8cfa280ea, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -24,11 +24,14 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 96be8a964ee0bc84fbd57951a7633fb6, type: 3}
+        m_Texture: {fileID: 2800000, guid: ad2a90b98d72cec499dee5a0c42ec21c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
-    m_Floats: []
-    m_Colors: []
+    m_Floats:
+    - _Cutoff: 0.3
+    - _ScrollSpeed: 1
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

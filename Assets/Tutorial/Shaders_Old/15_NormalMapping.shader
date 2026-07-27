@@ -2,7 +2,7 @@ Shader "Tutorial/15_NormalMapping"
 {
     Properties
     {
-		_BumpMap("Normal", 2D) = "bump" {} // Bump is the default texture for normal maps
+		[Normal] _BumpMap("Normal", 2D) = "bump" {} // Bump is the default texture for normal maps
 		_Color("Diff Color", Color) = (1, 1, 1, 1)
 		_Shininess("Shiny", Float) = 8
     }
