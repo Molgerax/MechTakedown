@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: 12_VertexDiffuseTexture
+  m_Name: 12_TextureDiscard
   m_Shader: {fileID: 4800000, guid: b6642df0bbbba4e408c5f892c4aaf15e, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -23,12 +23,17 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _ErosionTex:
+        m_Texture: {fileID: 2800000, guid: d8b169b6bff10cd40823052c0b656fbd, type: 3}
+        m_Scale: {x: 4, y: 4}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: ad2a90b98d72cec499dee5a0c42ec21c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _ErosionCutoff: 0.1
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

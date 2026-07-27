@@ -16,6 +16,11 @@ Shader "Tutorial/4_Discard"
 
         Pass
         {
+            // For this shader, we turn off backface-culling, so we can also see the inside of the mesh
+            // "Culling" means something is not rendered, so if we say "Cull Back", the backfaces are not rendered
+            // "Cull" can be either "Back" (default), "Front" or "Off" 
+            Cull Off
+            
             HLSLPROGRAM
 
             #pragma vertex vert
@@ -51,7 +56,7 @@ Shader "Tutorial/4_Discard"
             {
 				float4 output = 1;
 
-                // If value passed to clip() is below 0, the pixel is discarded and not rendered
+                // If the value passed to clip() is below 0, the pixel is discarded and not rendered
                 // With a _Cutoff of 0, this means all pixel below the y-Plane of 0 are discarded
                 // _Cutoff of 5 makes it discard all pixels below 5, etc.
                 clip(IN.positionWS.y - _Cutoff);
